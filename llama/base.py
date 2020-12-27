@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractclassmethod
 
+import datetime
 import json
 import os
 
@@ -11,7 +12,7 @@ class LlamaABC(metaclass=ABCMeta):
 
     @classmethod
     @abstractclassmethod
-    def from_event_json(cls, j: str):
+    def from_event_json(cls, j: str, debug: bool = False):
         pass
 
 
@@ -26,7 +27,8 @@ class LlamaMixin:
 
     json_excludes = ["env_keys", "json_excludes"]
 
-    def __init__(self):
+    def __init__(self, debug: bool = False):
+        self._debug = debug
         self.env_vars = {k: os.environ.get(k) for k in LlamaMixin.env_keys}
 
     def as_dict(self) -> dict:
@@ -41,15 +43,31 @@ class LlamaMixin:
             setattr(self, k, v)
 
     @classmethod
-    def from_event_json(cls, j: str):
-        llama = cls()
+    def from_event_json(cls, j: str, debug: bool = False):
+        llama = cls(debug=debug)
         llama._hydrate_from_event_json(j)
         return llama
 
     def as_event_json(self) -> str:
-        return json.dumps(self.as_dict())
+        return json.dumps(self.as_dict(), sort_keys=True, default=str)
 
 
 class LlamaBase(LlamaMixin, LlamaABC):
-    def __init__(self):
-        super(self, LlamaMixin)
+    @classmethod
+    def ctor(cls, self, debug: bool = False):
+        """
+        Use this constructor function in the first line of any
+        subclass __init__().
+
+        EG:
+
+        class Llaminizer(LlamaBase):
+            def __init__(self, debug: bool = False, happy: bool = True):
+                LlamaBase.ctor(self, debug=debug)
+                self._happy = happy
+        """
+        super(LlamaMixin, self).__init__()
+        self._debug = debug
+
+    def add_timestamp(self):
+        self.created_at = datetime.datetime.now(datetime.timezone.utc)

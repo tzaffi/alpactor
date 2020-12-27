@@ -23,7 +23,8 @@ def test_envs():
 
 
 class NumberAndString(LlamaMixin):
-    def __init__(self):
+    def __init__(self, debug=False):
+        LlamaBase.ctor(self, debug=debug)
         self.num = 42
         self.string = "hiya"
         self._private = "private"
@@ -39,7 +40,7 @@ def test_as_dict():
 
 def test_as_event_json():
     nas = NumberAndString()
-    assert json.loads(nas.as_event_json()) == {"num": 42, "string": "hiya"}
+    assert nas.as_event_json() == '{"num": 42, "string": "hiya"}'
 
 
 def test_from_event_json():
@@ -50,3 +51,8 @@ def test_from_event_json():
 def test_class_hierarchy():
     assert issubclass(LlamaBase, LlamaABC)
     assert issubclass(LlamaBase, LlamaMixin)
+
+
+def test_ctor():
+    nas = NumberAndString.from_event_json('{"num": 42, "string": "hiya"}', debug=True)
+    assert nas._debug is True
