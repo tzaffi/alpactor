@@ -1,0 +1,5 @@
+black
+confluent-kafka
+pytest
+ray
+websockets
