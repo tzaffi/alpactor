@@ -25,6 +25,19 @@ def test_envs():
     assert set(llamy.env_vars.keys()) == expected_env_var_keys
 
 
+def test_envs_are_not_production():
+    expected_env_var_keys = {
+        "KAFKA_HOST",
+        "KAFKA_API_KEY",
+        "KAFKA_API_SECRET",
+        "ALPACA_API_KEY",
+        "ALPACA_API_SECRET",
+    }
+
+    llamy = LlamaMixin()
+    assert llamy.env_vars == {k: f"TEST_{k}" for k in expected_env_var_keys}
+
+
 class NumberAndString(LlamaMixin):
     def __init__(self):
         self.num = 42

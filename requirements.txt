@@ -2,5 +2,6 @@ alpaca-backtrader-api
 black
 confluent-kafka
 pytest
+pytest-dotenv
 ray
 websockets
