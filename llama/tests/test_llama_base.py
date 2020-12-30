@@ -14,11 +14,12 @@ def test_abc():
 
 def test_envs():
     expected_env_var_keys = {
-        "KAFKA_HOST",
-        "KAFKA_API_KEY",
-        "KAFKA_API_SECRET",
+        "ENV",
         "ALPACA_API_KEY",
         "ALPACA_API_SECRET",
+        "KAFKA_API_KEY",
+        "KAFKA_API_SECRET",
+        "KAFKA_HOST",
     }
 
     llamy = LlamaMixin()
@@ -27,15 +28,40 @@ def test_envs():
 
 def test_envs_are_not_production():
     expected_env_var_keys = {
-        "KAFKA_HOST",
-        "KAFKA_API_KEY",
-        "KAFKA_API_SECRET",
+        "ENV",
         "ALPACA_API_KEY",
         "ALPACA_API_SECRET",
+        "KAFKA_API_KEY",
+        "KAFKA_API_SECRET",
+        "KAFKA_HOST",
     }
 
     llamy = LlamaMixin()
     assert llamy.env_vars == {k: f"TEST_{k}" for k in expected_env_var_keys}
+
+
+def test_is_live():
+    llamy = LlamaMixin()
+    assert llamy.is_live() is False
+
+    llamy = LlamaMixin(env="LIVE")
+    assert llamy.is_live() is True
+
+
+def test_is_paper():
+    llamy = LlamaMixin()
+    assert llamy.is_paper() is False
+
+    llamy = LlamaMixin(env="PAPER")
+    assert llamy.is_paper() is True
+
+
+def test_is_backtest():
+    llamy = LlamaMixin()
+    assert llamy.is_backtest() is False
+
+    llamy = LlamaMixin(env="BACKTEST")
+    assert llamy.is_backtest() is True
 
 
 class NumberAndString(LlamaMixin):
@@ -51,17 +77,17 @@ class NumberAndString(LlamaMixin):
 
 def test_as_dict():
     nas = NumberAndString()
-    assert nas.as_dict() == {"num": 42, "string": "hiya"}
+    assert nas.as_dict() == {"env": "TEST_ENV", "num": 42, "string": "hiya"}
 
 
 def test_as_event_json():
     nas = NumberAndString()
-    assert nas.as_event_json() == '{"num": 42, "string": "hiya"}'
+    assert nas.as_event_json() == '{"env": "TEST_ENV", "num": 42, "string": "hiya"}'
 
 
 def test_from_event_json():
     nas = NumberAndString.from_event_json('{"num": 42, "string": "hiya"}')
-    assert nas.as_dict() == {"num": 42, "string": "hiya"}
+    assert nas.as_dict() == {"env": "TEST_ENV", "num": 42, "string": "hiya"}
 
 
 def test_class_hierarchy():
@@ -137,7 +163,10 @@ def test_log():
 
     handler.flush()
     print(stream.getvalue())
-    assert stream.getvalue().strip() == 'NumberAndString:[{"num": 42, "string": "hiya"}]<msg:initialized>'
+    assert (
+        stream.getvalue().strip()
+        == 'NumberAndString:[{"env": "TEST_ENV", "num": 42, "string": "hiya"}]<msg:initialized>'
+    )
 
     logger.removeHandler(handler)
     handler.close()

@@ -19,16 +19,17 @@ class LlamaABC(metaclass=ABCMeta):
 
 class LlamaMixin:
     env_keys = [
-        "KAFKA_HOST",
-        "KAFKA_API_KEY",
-        "KAFKA_API_SECRET",
+        "ENV",
         "ALPACA_API_KEY",
         "ALPACA_API_SECRET",
+        "KAFKA_API_KEY",
+        "KAFKA_API_SECRET",
+        "KAFKA_HOST",
     ]
 
     json_excludes = ["env_vars", "env_keys", "json_excludes"]
 
-    def __init__(self, event_json: str = None, **kwargs):
+    def __init__(self, event_json: str = None, env: str = None, **kwargs):
         self.env_vars = {k: os.environ.get(k) for k in LlamaMixin.env_keys}
 
         for k, v in kwargs.items():
@@ -36,6 +37,11 @@ class LlamaMixin:
 
         if event_json:
             self._hydrate_from_event_json(event_json)
+
+        if env:
+            self.env = env
+        else:
+            self.env = self.env_vars["ENV"]
 
         self.log(msg="initialized")
 
@@ -49,6 +55,15 @@ class LlamaMixin:
             for k in set(dir(self)) - set(LlamaMixin.json_excludes)
             if not (k.startswith("_") or callable(v := getattr(self, k)))
         }
+
+    def is_live(self):
+        return self.env == "LIVE"
+
+    def is_paper(self):
+        return self.env == "PAPER"
+
+    def is_backtest(self):
+        return self.env == "BACKTEST"
 
     @classmethod
     def from_event_json(cls, j: str):

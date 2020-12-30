@@ -15,6 +15,8 @@ def test_init():
     evan = EventHandler()
 
     assert isinstance(evan.created_at, datetime.datetime)
+    assert isinstance(evan.env, str)
+    assert evan.env == "TEST_ENV"
 
 
 def test_as_event_json():
@@ -22,7 +24,7 @@ def test_as_event_json():
     with mock.patch.object(datetime, "datetime", mock.Mock(wraps=datetime.datetime)) as patched:
         patched.now.return_value = mocked_now
         evan = EventHandler()
-        assert evan.as_event_json() == f'{{"created_at": "{mocked_now}"}}'
+        assert evan.as_event_json() == f'{{"created_at": "{mocked_now}", "env": "TEST_ENV"}}'
 
 
 def test_log():
@@ -42,8 +44,26 @@ def test_log():
 
     handler.flush()
     print(stream.getvalue())
-    assert stream.getvalue().strip() == f'EventHandler:[{{"created_at": "{mocked_now}"}}]<msg:initialized>'
+    assert (
+        stream.getvalue().strip()
+        == f'EventHandler:[{{"created_at": "{mocked_now}", "env": "TEST_ENV"}}]<msg:initialized>'
+    )
 
     logger.removeHandler(handler)
     handler.close()
     logging.root.setLevel(original_logging_level)
+
+
+def test_envs():
+    evan = EventHandler()
+    assert evan.is_live() is False
+    assert evan.env == "TEST_ENV"
+
+    evan = EventHandler(env="LIVE")
+    assert evan.is_live() is True
+
+    evan = EventHandler(env="BACKTEST")
+    assert evan.is_backtest() is True
+
+    evan = EventHandler(env="PAPER")
+    assert evan.is_paper() is True
