@@ -64,6 +64,5 @@ def test_envs():
 
     evan = EventHandler(env="BACKTEST")
     assert evan.is_backtest() is True
-
     evan = EventHandler(env="PAPER")
-    assert evan.is_paper() is True
+    assert evan.is_paper() is Tru
