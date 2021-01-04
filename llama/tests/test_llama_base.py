@@ -1,5 +1,6 @@
 from io import StringIO
 import logging
+import uuid
 
 import pytest
 import unittest.mock as mock
@@ -12,59 +13,55 @@ def test_abc():
         LlamaABC()
 
 
-def test_envs():
-    expected_env_var_keys = {
-        "ENV",
-        "ALPACA_API_KEY",
-        "ALPACA_API_SECRET",
-        "KAFKA_API_KEY",
-        "KAFKA_API_SECRET",
-        "KAFKA_HOST",
-    }
+class ImmutableNumber(LlamaMixin):
+    def __init__(self, num):
+        super(ImmutableNumber, self).__init__(num=num)
 
+
+def test_is_immutable():
     llamy = LlamaMixin()
-    assert set(llamy.env_vars.keys()) == expected_env_var_keys
+
+    assert llamy.is_immutable() is True
+
+    with pytest.raises(AttributeError):
+        llamy.blah = "blah"
+
+    imnum = ImmutableNumber(42)
+    assert imnum.num == 42
+
+    with pytest.raises(AttributeError):
+        llamy.num = 43
 
 
-def test_envs_are_not_production():
-    expected_env_var_keys = {
-        "ENV",
-        "ALPACA_API_KEY",
-        "ALPACA_API_SECRET",
-        "KAFKA_API_KEY",
-        "KAFKA_API_SECRET",
-        "KAFKA_HOST",
-    }
-
-    llamy = LlamaMixin()
-    assert llamy.env_vars == {k: f"TEST_{k}" for k in expected_env_var_keys}
+def test_id():
+    mock_id = "I think, therefore I am"
+    with mock.patch.object(uuid, "uuid4", mock.Mock(wraps=uuid.uuid4)) as patched:
+        patched.return_value = mock_id
+        llamy = LlamaMixin()
+        assert llamy.table_id == mock_id
 
 
-def test_is_live():
-    llamy = LlamaMixin()
-    assert llamy.is_live() is False
+class NumberEvent(LlamaMixin):
+    @classmethod
+    def has_timestamp(cls):
+        return True
 
-    llamy = LlamaMixin(env="LIVE")
-    assert llamy.is_live() is True
-
-
-def test_is_paper():
-    llamy = LlamaMixin()
-    assert llamy.is_paper() is False
-
-    llamy = LlamaMixin(env="PAPER")
-    assert llamy.is_paper() is True
+    def __init__(self, num):
+        super(NumberEvent, self).__init__(num=num)
 
 
-def test_is_backtest():
-    llamy = LlamaMixin()
-    assert llamy.is_backtest() is False
-
-    llamy = LlamaMixin(env="BACKTEST")
-    assert llamy.is_backtest() is True
+def test_created_at():
+    ne = NumberEvent(42)
+    assert ne.num == 42
+    assert ne.has_timestamp()
+    assert hasattr(ne, "created_at")
 
 
 class NumberAndString(LlamaMixin):
+    @classmethod
+    def is_immutable(cls):
+        return False
+
     def __init__(self):
         self.num = 42
         self.string = "hiya"
@@ -75,19 +72,36 @@ class NumberAndString(LlamaMixin):
         pass
 
 
+def test_db_table_name():
+    nas = NumberAndString()
+    assert nas.db_table_name() == "numberandstring"
+
+
 def test_as_dict():
     nas = NumberAndString()
-    assert nas.as_dict() == {"env": "TEST_ENV", "num": 42, "string": "hiya"}
+    assert not nas.has_timestamp()
+    d = nas.as_dict()
+    assert "table_id" in d
+    assert {k: v for k, v in d.items() if k != "table_id"} == {"num": 42, "string": "hiya"}
 
 
 def test_as_event_json():
-    nas = NumberAndString()
-    assert nas.as_event_json() == '{"env": "TEST_ENV", "num": 42, "string": "hiya"}'
+    mock_id = "I think, therefore I am"
+
+    with mock.patch.object(uuid, "uuid4", mock.Mock(wraps=uuid.uuid4)) as patched_id:
+        patched_id.return_value = mock_id
+
+        nas = NumberAndString()
+        assert nas.as_event_json() == f'{{"num": 42, "string": "hiya", "table_id": "{mock_id}"}}'
 
 
 def test_from_event_json():
-    nas = NumberAndString.from_event_json('{"num": 42, "string": "hiya"}')
-    assert nas.as_dict() == {"env": "TEST_ENV", "num": 42, "string": "hiya"}
+    mock_id = "I think, therefore I am"
+
+    with mock.patch.object(uuid, "uuid4", mock.Mock(wraps=uuid.uuid4)) as patched_id:
+        patched_id.return_value = mock_id
+        nas = NumberAndString.from_event_json('{"num": 42, "string": "hiya"}')
+        assert nas.as_event_json() == f'{{"num": 42, "string": "hiya", "table_id": "{mock_id}"}}'
 
 
 def test_class_hierarchy():
@@ -159,15 +173,19 @@ def test_log():
     logger.removeHandler(handler)
     logger.addHandler(handler)
 
-    NumberAndString.from_event_json('{"num": 42, "string": "hiya"}')
+    mock_id = "I think, therefore I am"
+    with mock.patch.object(uuid, "uuid4", mock.Mock(wraps=uuid.uuid4)) as patched_id:
+        patched_id.return_value = mock_id
 
-    handler.flush()
-    print(stream.getvalue())
-    assert (
-        stream.getvalue().strip()
-        == 'NumberAndString:[{"env": "TEST_ENV", "num": 42, "string": "hiya"}]<msg:initialized>'
-    )
+        NumberAndString.from_event_json('{"num": 42, "string": "hiya"}')
 
-    logger.removeHandler(handler)
-    handler.close()
-    logging.root.setLevel(original_logging_level)
+        handler.flush()
+        print(stream.getvalue())
+        assert (
+            stream.getvalue().strip()
+            == f'NumberAndString:[{{"num": 42, "string": "hiya", "table_id": "{mock_id}"}}]<msg:initialized>'
+        )
+
+        logger.removeHandler(handler)
+        handler.close()
+        logging.root.setLevel(original_logging_level)

@@ -3,5 +3,7 @@ black
 confluent-kafka
 pytest
 pytest-dotenv
+pytest-xdist
 ray
+SQLAlchemy==1.4.0b1
 websockets

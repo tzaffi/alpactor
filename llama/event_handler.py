@@ -2,6 +2,14 @@ from llama.base import LlamaBase
 
 
 class EventHandler(LlamaBase):
-    def __init__(self, **kwargs):
-        self.add_timestamp()
-        LlamaBase.__init__(self, **kwargs)
+    """
+    Immutable, json-izable class with a timestamp
+    """
+
+    @classmethod
+    def has_timestamp(cls) -> bool:
+        return True
+
+    @classmethod
+    def db_table_name(cls) -> str:
+        return "events"
