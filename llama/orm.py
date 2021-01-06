@@ -56,9 +56,6 @@ class ORM:
             name: d[name] for col in self.tables[type(obj)].columns if (name := col.name) not in ORM.exclude_columns
         }
 
-    def hydrate(self, model: Type, d: dict) -> LlamaABC:
-        return model.from_event_json(d["event"])
-
     def insert(self, model: Type, *objs: Sequence[LlamaABC]):
         assert issubclass(model, LlamaABC), f"Don't know how to model a non-Llama type {model}"
         assert model in self.tables, f"Model {model} never got added as an ORM table (don't forget 'add_table()')"
@@ -69,7 +66,10 @@ class ORM:
         with self.engine.begin() as transaction:
             transaction.execute(sqla_insert(self.tables[model], [self.transform(obj) for obj in objs]))
 
-    def select(self, model: Type, *ids: Sequence[UUID]) -> Dict[UUID, LlamaABC]:
+    def hydrate(self, model: Type, d: dict) -> LlamaABC:
+        return model.from_event_json(d["event"])
+
+    def retrieve(self, model: Type, *ids: Sequence[UUID]) -> Dict[UUID, LlamaABC]:
         assert issubclass(model, LlamaABC), f"Don't know how to model a non-Llama type {model}"
         assert model in self.tables, f"Model {model} never got added as an ORM table (don't forget 'add_table()')"
         assert ids, "Gotta have at least one id to select"

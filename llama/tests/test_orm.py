@@ -149,7 +149,7 @@ def test_bootstrap_db():
             assert "no such table: yomama" in str(oe.value)
 
 
-def test_insert_and_select():
+def test_insert_and_retrieve():
     with inmem_db_context() as eng:
         ori = ORM(eng=eng)
 
@@ -179,8 +179,8 @@ def test_insert_and_select():
             result = conn.execute(text("SELECT * FROM events"))
             assert len(result.all()) == 3
 
-        numbers_roundtrip = ori.select(ImmutableNumber, *num_ids)
-        events_roundtrip = ori.select(EventHandler, *event_ids)
+        numbers_roundtrip = ori.retrieve(ImmutableNumber, *num_ids)
+        events_roundtrip = ori.retrieve(EventHandler, *event_ids)
 
         assert numbers_roundtrip == {obj.table_id: obj for obj in some_numbers}
         assert events_roundtrip == {obj.table_id: obj for obj in some_events}
