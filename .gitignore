@@ -1,5 +1,8 @@
+private/
+*.ipynb
+run_test.py
+
 .vscode/
-alpactor-*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

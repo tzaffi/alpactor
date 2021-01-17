@@ -6,22 +6,30 @@ from dotenv import load_dotenv, dotenv_values
 from llama.logger import log
 from definitions import PROJECT_ROOT
 
+ENV_SENTINEL = "ENV_SENTINEL"
+ALPACA_API_KEY_LIVE = "ALPACA_API_KEY_LIVE"
+ALPACA_API_SECRET_LIVE = "ALPACA_API_SECRET_LIVE"
+ALPACA_API_KEY_PAPER = "ALPACA_API_KEY_PAPER"
+ALPACA_API_SECRET_PAPER = "ALPACA_API_SECRET_PAPER"
+DB_URI = "DB_URI"
+KAFKA_API_KEY = "KAFKA_API_KEY"
+KAFKA_API_SECRET = "KAFKA_API_SECRET"
+KAFKA_HOST = "KAFKA_HOST"
+
 
 _envs_loaded = False
 
 env_keys = {
-    "ENV_SENTINEL",
-    "ALPACA_API_KEY",
-    "ALPACA_API_SECRET",
-    "DB_URI",
-    "KAFKA_API_KEY",
-    "KAFKA_API_SECRET",
-    "KAFKA_HOST",
+    ENV_SENTINEL,
+    ALPACA_API_KEY_LIVE,
+    ALPACA_API_SECRET_LIVE,
+    ALPACA_API_KEY_PAPER,
+    ALPACA_API_SECRET_PAPER,
+    DB_URI,
+    KAFKA_API_KEY,
+    KAFKA_API_SECRET,
+    KAFKA_HOST,
 }
-
-
-def is_bootstrapping_mode():
-    return os.environ.get("BOOTSTRAPPING", "FALSE") == "TRUE"
 
 
 def is_live():

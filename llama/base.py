@@ -27,6 +27,10 @@ class LlamaMixin:
         return cls.__qualname__.lower()
 
     @classmethod
+    def table_id(cls) -> uuid.UUID:
+        return uuid.uuid4()
+
+    @classmethod
     def has_timestamp(cls) -> bool:
         return False
 
@@ -68,9 +72,10 @@ class LlamaMixin:
 
     def as_dict(self) -> dict:
         return {
-            k: v
+            k: getattr(self, k)
             for k in set(dir(self)) - set(LlamaMixin.json_excludes)
-            if not (k.startswith("_") or callable(v := getattr(self, k)))
+            if not (k.startswith("_") or callable(getattr(self, k)))
+            # if not (k.startswith("_") or callable(v := getattr(self, k)))
         }
 
     @classmethod

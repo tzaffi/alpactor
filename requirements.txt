@@ -1,9 +1,9 @@
 alpaca-backtrader-api
+alpaca-trade-api
 black
 confluent-kafka
 pytest
-pytest-dotenv
-pytest-xdist
+python-dotenv
 ray
 SQLAlchemy==1.4.0b1
 websockets

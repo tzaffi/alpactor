@@ -1,6 +1,5 @@
-from abc import abstractmethod, abstractclassmethod
-
-from abc import ABCMeta as NativeABCMeta
+from abc import abstractmethod, abstractclassmethod, ABCMeta as NativeABCMeta
+import uuid
 
 
 class DummyAttribute:
@@ -22,7 +21,9 @@ class ABCMeta(NativeABCMeta):
     def __call__(cls, *args, **kwargs):
         instance = NativeABCMeta.__call__(cls, *args, **kwargs)
         abstract_attributes = {
-            name for name in dir(instance) if getattr(getattr(instance, name), "__is_abstract_attribute__", False)
+            name
+            for name in dir(instance)
+            if getattr(getattr(instance, name), "__is_abstract_attribute__", False)
         }
         if abstract_attributes:
             raise NotImplementedError(
@@ -50,7 +51,7 @@ class LlamaABC(metaclass=ABCMeta):
         pass
 
     @abstract_attribute
-    def table_id(self) -> str:
+    def table_id(self) -> uuid.UUID:
         pass
 
     @abstractmethod

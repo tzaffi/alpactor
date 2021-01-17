@@ -22,6 +22,9 @@ def test_live_env():
 
     assert os.environ.get("ENV_SENTINEL") == "Go for the gold!!!"
 
+    assert os.environ.get("ALPACA_API_KEY_LIVE") != os.environ.get("ALPACA_API_KEY_PAPER")
+    assert os.environ.get("ALPACA_API_SECRET_LIVE") != os.environ.get("ALPACA_API_SECRET_PAPER")
+
 
 def test_backtest_env():
     os.environ["ENV"] = "BACKTEST"
@@ -33,6 +36,9 @@ def test_backtest_env():
 
     assert os.environ.get("ENV_SENTINEL") == "Go for the bitcoin!!!"
 
+    assert os.environ.get("ALPACA_API_KEY_LIVE") == "TEST_ALPACA_API_KEY_LIVE"
+    assert os.environ.get("ALPACA_API_SECRET_LIVE") == "TEST_ALPACA_API_SECRET_LIVE"
+
 
 def test_paper_env():
     os.environ["ENV"] = "PAPER"
@@ -43,6 +49,9 @@ def test_paper_env():
     assert env.get_env_file() == definitions.PROJECT_ROOT / ".paper.env"
 
     assert os.environ.get("ENV_SENTINEL") == "Go for the fiat!!!"
+
+    assert os.environ.get("ALPACA_API_KEY_LIVE") == os.environ.get("ALPACA_API_KEY_PAPER")
+    assert os.environ.get("ALPACA_API_SECRET_LIVE") == os.environ.get("ALPACA_API_SECRET_PAPER")
 
 
 def test_envs():
@@ -79,8 +88,10 @@ def test_envs_are_not_production():
 
     expected_env_var_keys = {
         "ENV_SENTINEL",
-        "ALPACA_API_KEY",
-        "ALPACA_API_SECRET",
+        "ALPACA_API_KEY_LIVE",
+        "ALPACA_API_SECRET_LIVE",
+        "ALPACA_API_KEY_PAPER",
+        "ALPACA_API_SECRET_PAPER",
         "DB_URI",
         "KAFKA_API_KEY",
         "KAFKA_API_SECRET",
@@ -91,13 +102,3 @@ def test_envs_are_not_production():
     expected_dict.update(DB_URI="sqlite+pysqlite:///:memory:")
 
     assert dotenv_values(env.get_env_file()) == expected_dict
-
-
-def test_bootstrapping_mode():
-    assert env.is_bootstrapping_mode() is False
-
-    os.environ["BOOTSTRAPPING"] = "TRUE"
-    assert env.is_bootstrapping_mode() is True
-
-    del os.environ["BOOTSTRAPPING"]
-    assert env.is_bootstrapping_mode() is False

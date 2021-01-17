@@ -16,4 +16,3 @@ kafka-produce:
 # EG: $ make kafka-consume TOPIC=alpactor_dev
 kafka-consume-beginning-of-time:
 	ccloud kafka topic consume -b $(TOPIC)
-
