@@ -32,11 +32,13 @@ def test_init():
 def test_order():
     mocked_api, patched_REST, broker, teena = mock_init()
 
-    mock_id = "yo mamma bear!!!!!"
+    mock_id = uuid.uuid4()
     with patch.object(uuid, "uuid4", Mock(wraps=uuid.uuid4)) as patched_id:
         patched_id.return_value = mock_id
+        mocked_response = MagicMock(id=str(mock_id))
+        teena.api.submit_order.return_value = mocked_response
 
-        teena.order(
+        order = teena.order(
             "buy",
             "IBM",
             1337,
@@ -50,7 +52,7 @@ def test_order():
         time_in_force="gtc",
         limit_price=None,
         stop_price=None,
-        client_order_id=mock_id,
+        client_order_id=str(mock_id),
         order_class=None,
         take_profit=None,
         stop_loss=None,
@@ -58,10 +60,66 @@ def test_order():
         trail_percent=None,
     )
 
-    # with patch.object(
-    #     alpaca_trade_api, "order", Mock(wraps=alpaca_trade_api.submit_order)
-    # ) as patched_order:
-    #     patched_order.return_value = mocked_order
+    assert order == {
+        "external_order_id": mock_id,
+        "order": {
+            "side": "buy",
+            "symbol": "IBM",
+            "qty": 1337,
+            "type": "market",
+            "time_in_force": "gtc",
+            "limit_price": None,
+            "stop_price": None,
+            "client_order_id": str(mock_id),
+            "order_class": None,
+            "take_profit": None,
+            "stop_loss": None,
+            "trail_price": None,
+            "trail_percent": None,
+        },
+        "response": mocked_response,
+    }
 
-    #     order = teena.order("buy", "IBM", 100)
-    #     assert order == patched_order
+
+def test_cancel():
+    def happy():
+        mocked_api, patched_REST, broker, teena = mock_init()
+
+        mock_id = "yo mamma bear!!!!!"
+        teena.api.cancel_order.return_value = None
+
+        cancellation = teena.cancel(mock_id)
+        assert cancellation == {
+            "external_order_id": mock_id,
+            "cancelled": True,
+        }
+
+    def api_error():
+        mocked_api, patched_REST, broker, teena = mock_init()
+
+        mock_id = "yo mamma bear!!!!!"
+        mock_err = alpaca_trade_api.rest.APIError({"message": "some error"})
+        teena.api.cancel_order.side_effect = mock_err
+
+        cancellation = teena.cancel(mock_id)
+        assert cancellation == {
+            "external_order_id": mock_id,
+            "cancelled": False,
+            "api_error": mock_err,
+        }
+
+    happy()
+    api_error()
+
+
+def test_market_clock():
+    mocked_api, patched_REST, broker, teena = mock_init()
+
+    mocked_clock = "tick tock tick tock 5 O'clock"
+    teena.api.get_clock.return_value = mocked_clock
+
+    clock = teena.market_clock()
+
+    mocked_api.get_clock.assert_called_once_with()
+
+    assert clock == mocked_clock

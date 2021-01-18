@@ -41,6 +41,9 @@ def test_backtest_env():
 
 
 def test_paper_env():
+    """
+    Note: as a side-effect, a process calling this will be in a paper environment
+    """
     os.environ["ENV"] = "PAPER"
     env.setup(force_rerun=True)
 
