@@ -1,5 +1,8 @@
+import alpaca_trade_api as tradeapi
+
 from dataclasses import dataclass
 import os
+import uuid
 
 from llama.base import LlamaBase
 import llama.env as env
@@ -13,6 +16,41 @@ class Broker:
     api_key: str
     api_secret: str
     is_live: bool
+    broker_type: str = "alpaca"
+
+
+class TradeExecutor:
+    def __init__(self, broker: Broker):
+        self.broker = broker
+        assert self.broker.broker_type == "alpaca"
+        self.api = tradeapi.REST(
+            key_id=self.broker.api_key,
+            secret_key=self.broker.api_secret,
+            base_url=self.broker.api_url,
+        )
+
+    def order(self, side: str, symbol: str, qty: int):
+        """
+        Basing off of: https://alpaca.markets/docs/api-documentation/api-v2/orders/
+        """
+        assert self.broker.broker_type == "alpaca"
+        order = {
+            "symbol": symbol,
+            "qty": qty,
+            "side": side,
+            "type": "market",  # TODO: will need to add more choices, starting with this
+            "time_in_force": "gtc",
+            "limit_price": None,
+            "stop_price": None,
+            "client_order_id": uuid.uuid4(),
+            "order_class": None,
+            "take_profit": None,
+            "stop_loss": None,
+            "trail_price": None,
+            "trail_percent": None,
+        }
+        resp_order = self.api.submit_order(**order)
+        return {"order": order, "response": resp_order}
 
 
 class Trader(LlamaBase):

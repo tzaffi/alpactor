@@ -1,8 +1,9 @@
 private/
 *.ipynb
-run_test.py
+run_testy.py
 
 .vscode/
+.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
