@@ -1,8 +1,4 @@
-import alpaca_trade_api
-
-from unittest.mock import patch, Mock
-
-from llama.trader import TradeExecutor, Trader, Broker
+from llama.trader import Trader, Broker
 
 
 def test_init():

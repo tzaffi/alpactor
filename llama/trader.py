@@ -1,6 +1,8 @@
 import alpaca_trade_api as tradeapi
 import alpaca_trade_api.rest as alpaca_rest
 
+import ray
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import os
@@ -8,6 +10,7 @@ import uuid
 from typing import Tuple
 
 from llama.base import LlamaBase
+from llama.alpaca_entity import AlpacaEntity, AlpacaError
 import llama.env as env
 
 
@@ -32,6 +35,9 @@ class TradeExecutor:
             base_url=self.broker.api_url,
         )
 
+    def __str__(self):
+        return f"TradeExecutor with Broker[{self.broker.name} ({'LIVE' if self.broker.is_live else 'QA'})]"
+
     def order(self, side: str, symbol: str, qty: int) -> dict:
         """
         Basing off of: https://alpaca.markets/docs/api-documentation/api-v2/orders/
@@ -52,9 +58,9 @@ class TradeExecutor:
             "trail_price": None,
             "trail_percent": None,
         }
-        resp_order = self.api.submit_order(**order)
+        resp_order = AlpacaEntity(self.api.submit_order(**order)).as_dict()
         return {
-            "external_order_id": uuid.UUID(resp_order.id),
+            "external_order_id": uuid.UUID(resp_order["id"]),
             "order": order,
             "response": resp_order,
         }
@@ -76,18 +82,23 @@ class TradeExecutor:
             return {
                 "external_order_id": external_order_id,
                 "cancelled": False,
-                "api_error": e,
+                "api_error": AlpacaError(e).as_dict(),
             }
 
-    def market_clock(self) -> alpaca_rest.Clock:
-        return self.api.get_clock()
+    def market_clock(self) -> dict:
+        return AlpacaEntity(self.api.get_clock()).as_dict()
 
     def market_open_and_toggle_delta(self) -> Tuple[bool, timedelta]:
         clock = self.market_clock()
-        is_open = clock.is_open
-        next_toggle = min(clock.next_close, clock.next_open)
+        is_open = clock["is_open"]
+        next_toggle = min(clock["next_close"], clock["next_open"])
         window = next_toggle - datetime.now(next_toggle.tz)
         return is_open, window
+
+
+@ray.remote
+class RemoteTradeExecutor(TradeExecutor):
+    pass
 
 
 class Trader(LlamaBase):

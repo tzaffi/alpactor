@@ -1,10 +1,12 @@
+import alpaca_trade_api
+
 import uuid
 
-import alpaca_trade_api
 
 from unittest.mock import patch, Mock, MagicMock
 
 from llama.trader import TradeExecutor, Broker
+from llama.alpaca_entity import AlpacaError, AlpacaEntity
 
 
 def mock_init():
@@ -35,7 +37,7 @@ def test_order():
     mock_id = uuid.uuid4()
     with patch.object(uuid, "uuid4", Mock(wraps=uuid.uuid4)) as patched_id:
         patched_id.return_value = mock_id
-        mocked_response = MagicMock(id=str(mock_id))
+        mocked_response = alpaca_trade_api.entity.Entity({"id": str(mock_id)})
         teena.api.submit_order.return_value = mocked_response
 
         order = teena.order(
@@ -77,7 +79,7 @@ def test_order():
             "trail_price": None,
             "trail_percent": None,
         },
-        "response": mocked_response,
+        "response": {"id": str(mock_id)},
     }
 
 
@@ -98,14 +100,14 @@ def test_cancel():
         mocked_api, patched_REST, broker, teena = mock_init()
 
         mock_id = "yo mamma bear!!!!!"
-        mock_err = alpaca_trade_api.rest.APIError({"message": "some error"})
+        mock_err = alpaca_trade_api.rest.APIError({"message": "some error", "code": "some code"})
         teena.api.cancel_order.side_effect = mock_err
 
         cancellation = teena.cancel(mock_id)
         assert cancellation == {
             "external_order_id": mock_id,
             "cancelled": False,
-            "api_error": mock_err,
+            "api_error": AlpacaError(mock_err).as_dict(),
         }
 
     happy()
@@ -115,11 +117,11 @@ def test_cancel():
 def test_market_clock():
     mocked_api, patched_REST, broker, teena = mock_init()
 
-    mocked_clock = "tick tock tick tock 5 O'clock"
+    mocked_clock = alpaca_trade_api.entity.Entity({"time": "tick tock tick tock 5 O'clock"})
     teena.api.get_clock.return_value = mocked_clock
 
     clock = teena.market_clock()
 
     mocked_api.get_clock.assert_called_once_with()
 
-    assert clock == mocked_clock
+    assert clock == AlpacaEntity(mocked_clock).as_dict()
